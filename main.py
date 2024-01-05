@@ -1,21 +1,7 @@
 from random import randint, choice
 
 
-def check_winning_combination(Y):
-    winners = [
-        [0, 1, 2],
-        [3, 4, 5],
-        [6, 7, 8],
-        [0, 3, 6],
-        [1, 4, 7],
-        [2, 5, 8],
-        [0, 4, 8],
-        [2, 4, 6]
-    ]
-    for w in winners:
-        if w[0] in Y and w[1] in Y and w[2] in Y:
-            return True
-    return False
+
 
 
 def get_move_from_user_input(user_input):
@@ -31,10 +17,21 @@ def get_move_from_user_input(user_input):
     return move
 
 
+
 class TicTacToe():
     def __init__(self):
         self.player = ['X', 'O']
         self.game_state = ['', '', '', '', '', '', '', '', '']
+        self.winners = [
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+            [0, 3, 6],
+            [1, 4, 7],
+            [2, 5, 8],
+            [0, 4, 8],
+            [2, 4, 6]
+        ]
         self.current_player = None
         self.main()
 
@@ -49,10 +46,11 @@ class TicTacToe():
                 move = self.ask_user_input()
                 print(f"player X move={move}")
             else:
-                move = self.get_ai_move()
+                # move = self.get_dumb_move()
+                move = self.get_algo_move()
                 print(f"player O move={move}")
             self.game_state[move] = self.current_player
-            self.change_user()
+            self.switch_user()
             game_finished = self.check_for_game_end()
             self.draw_board()
 
@@ -80,6 +78,7 @@ class TicTacToe():
         print(f"{nc}")
 
     def ask_user_input(self):
+        # TODO error with input aq1
         """Ask next user_input, if valid, put in game state and redraw board"""
         is_valid = False
         move = ''
@@ -104,12 +103,142 @@ class TicTacToe():
                 is_valid = False
         return move
 
-    def get_ai_move(self):
+    def check_winning_combination(self, Y):
+        for w in self.winners:
+            if w[0] in Y and w[1] in Y and w[2] in Y:
+                return True
+        return False
+
+    def get_dumb_move(self):
         """Pick randomly from a list of available moves"""
         # print(f"in get_ai_move")
         available_moves = self.get_available_moves()
         return choice(available_moves)
         # self.game_state[move] = self.current_player
+
+    def get_moves_per_player(self):
+        x_moves = []
+        o_moves = []
+        for idx, x in enumerate(self.game_state):
+            if x == 'X':
+                x_moves.append(idx)
+            elif x == 'O':
+                o_moves.append(idx)
+        retval = (x_moves, o_moves)
+        return retval
+
+    def get_almost_full_winning_states(self, ):
+        one_pos_filled_x = []
+        two_pos_filled_x = []
+        # loop over all winning combinations
+        for idx, combination in enumerate(self.winners):
+            count = 0
+            # select those that are partially filled
+            for position in combination:
+                if position in x_moves:
+                    count += 1
+            # check if the missing positions are already blocked
+            if count == 2:
+                two_pos_filled_x.append(idx)
+            if count == 1:
+                one_pos_filled_x.append(idx)
+
+                # for position in combination:
+                #     if position not in o_moves:
+                #         scores[idx] = count
+        to_delete = []
+        if two_pos_filled_x:
+            print("=================================")
+            print(f"two_pos_filled_x 1={two_pos_filled_x}")
+            for index, idx in enumerate(two_pos_filled_x):
+                deleted = False
+                print(f"iteration {index + 1}, idx={idx}")
+                for position in winners[idx]:
+                    # print(f"two_pos_filled_x 2, positions={position}, winners[idx]={winners[idx]}")
+                    if position in o_moves:
+                        print(f"combination {idx} is blocked")
+                        # two_pos_filled_x.remove(idx)
+                        to_delete.append(idx)
+                        print(f"combination {idx} should have been removed index:{two_pos_filled_x}")
+                        print(f"about to break for {winners[idx]}")
+                        break
+            two_pos_filled_x = [x for x in two_pos_filled_x if x not in to_delete]
+
+            print(f"two_pos_filled_x 4={two_pos_filled_x}")
+            if two_pos_filled_x:
+                # TODO what if all options are blocked?
+                # TODO blocked options are not deleted
+                for position in winners[two_pos_filled_x[0]]:
+                    if self.game_state[position] == "":
+                        print(f"positions={position}")
+                        return position
+            else:
+                return self.get_dumb_move()
+        else:
+            return self.get_dumb_move()
+
+    def get_algo_move(self):
+        x_moves, o_moves = self.get_moves_per_player()
+        print(f"{x_moves}, {o_moves}")
+        # o_moves = []
+        # for idx, x in enumerate(self.game_state):
+        #     if x == 'X':
+        #         x_moves.append(idx)
+        #     elif x == 'O':
+        #         o_moves.append(idx)
+        one_pos_filled_o = []
+        two_pos_filled_x = []
+        # block winning moves
+        counts = []
+        one_pos_filled_o = []
+        two_pos_filled_x = []
+        # loop over all winning combinations
+        for idx, combination in enumerate(winners):
+            count = 0
+            # select those that are partially filled
+            for position in combination:
+                if position in x_moves:
+                    count += 1
+            # check if the missing positions are already blocked
+            if count == 2:
+                two_pos_filled_x.append(idx)
+            if count == 1:
+                one_pos_filled_o.append(idx)
+
+                # for position in combination:
+                #     if position not in o_moves:
+                #         scores[idx] = count
+        to_delete = []
+        if two_pos_filled_x:
+            print("=================================")
+            print(f"two_pos_filled_x 1={two_pos_filled_x}")
+            for index, idx in enumerate(two_pos_filled_x):
+                deleted = False
+                print(f"iteration {index + 1}, idx={idx}")
+                for position in winners[idx]:
+                    # print(f"two_pos_filled_x 2, positions={position}, winners[idx]={winners[idx]}")
+                    if position in o_moves:
+                        print(f"combination {idx} is blocked")
+                        # two_pos_filled_x.remove(idx)
+                        to_delete.append(idx)
+                        print(f"combination {idx} should have been removed index:{two_pos_filled_x}")
+                        print(f"about to break for {winners[idx]}")
+                        break
+            two_pos_filled_x = [x for x in two_pos_filled_x if x not in to_delete]
+
+            print(f"two_pos_filled_x 4={two_pos_filled_x}")
+            if two_pos_filled_x:
+                # TODO what if all options are blocked?
+                # TODO blocked options are not deleted
+                for position in winners[two_pos_filled_x[0]]:
+                    if self.game_state[position] == "":
+                        print(f"positions={position}")
+                        return position
+            else:
+                return self.get_dumb_move()
+        else:
+            return self.get_dumb_move()
+
 
     def get_available_moves(self):
         available_moves = []
@@ -143,7 +272,7 @@ class TicTacToe():
             return True
         return False
 
-    def change_user(self):
+    def switch_user(self):
         if self.current_player == 'X':
             self.current_player = 'O'
         else:
